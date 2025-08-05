@@ -1,21 +1,24 @@
 package net.idothehax.theoldbroadcast.block;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.BlockHitResult;
 import net.idothehax.theoldbroadcast.world.dimension.OldBroadcastTeleporter;
+import net.idothehax.theoldbroadcast.Theoldbroadcast;
+
+import javax.annotation.Nonnull;
 
 public class VintageTelevisionBlock extends Block {
 
@@ -28,13 +31,24 @@ public class VintageTelevisionBlock extends Block {
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+    @Nonnull
+    public InteractionResult use(@Nonnull BlockState state, @Nonnull Level level, @Nonnull BlockPos pos, @Nonnull Player player, @Nonnull InteractionHand hand, @Nonnull BlockHitResult hit) {
         if (!level.isClientSide && hand == InteractionHand.MAIN_HAND) {
-            // Check if player is holding a VHS tape (we'll use a book as placeholder)
-            if (player.getItemInHand(hand).is(Items.BOOK)) {
+            // Check if player is holding a VHS tape (now a block item)
+            if (player.getItemInHand(hand).is(Theoldbroadcast.VHS_TAPE.get())) {
                 if (isValidPortalStructure(level, pos)) {
                     activatePortal(level, pos, player);
                     return InteractionResult.SUCCESS;
+                } else {
+                    // Debug message when portal structure is invalid
+                    if (player instanceof ServerPlayer serverPlayer) {
+                        serverPlayer.sendSystemMessage(net.minecraft.network.chat.Component.literal("Portal structure is invalid! Need 3x3 TVs with observers in corners."));
+                    }
+                }
+            } else {
+                // Debug message when not holding VHS tape
+                if (player instanceof ServerPlayer serverPlayer) {
+                    serverPlayer.sendSystemMessage(net.minecraft.network.chat.Component.literal("You need a VHS tape to activate the portal!"));
                 }
             }
         }
@@ -52,7 +66,7 @@ public class VintageTelevisionBlock extends Block {
             }
         }
 
-        // Check for vintage cameras in corners (we'll use observers as placeholders)
+        // Check for observers in corners (representing vintage cameras)
         BlockPos[] cameraPositions = {
             center.offset(-2, 0, -2),
             center.offset(2, 0, -2),
@@ -61,7 +75,7 @@ public class VintageTelevisionBlock extends Block {
         };
 
         for (BlockPos cameraPos : cameraPositions) {
-            if (!level.getBlockState(cameraPos).is(net.minecraft.world.level.block.Blocks.OBSERVER)) {
+            if (!level.getBlockState(cameraPos).is(Blocks.OBSERVER)) {
                 return false;
             }
         }
@@ -70,7 +84,7 @@ public class VintageTelevisionBlock extends Block {
     }
 
     private void activatePortal(Level level, BlockPos pos, Player player) {
-        if (level instanceof ServerLevel serverLevel && player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+        if (level instanceof ServerLevel serverLevel && player instanceof ServerPlayer serverPlayer) {
             level.playSound(null, pos, SoundEvents.PORTAL_TRIGGER, SoundSource.BLOCKS, 1.0f, 0.8f);
 
             // Teleport player to Old Broadcast dimension
@@ -84,6 +98,9 @@ public class VintageTelevisionBlock extends Block {
                 serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.SMOKE,
                         x, y, z, 1, 0, 0, 0, 0.1);
             }
+
+            // Consume the VHS tape
+            player.getItemInHand(InteractionHand.MAIN_HAND).shrink(1);
         }
     }
 }

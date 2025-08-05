@@ -7,7 +7,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.portal.PortalInfo;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.util.ITeleporter;
-import net.idothehax.theoldbroadcast.world.dimension.OldBroadcastDimensions;
 
 import java.util.function.Function;
 
@@ -29,11 +28,11 @@ public class OldBroadcastTeleporter implements ITeleporter {
     public PortalInfo getPortalInfo(Entity entity, ServerLevel destWorld, Function<ServerLevel, PortalInfo> defaultPortalInfo) {
         if (destWorld.dimension().equals(OldBroadcastDimensions.OLD_BROADCAST_LEVEL)) {
             // Teleport to studio entrance
-            return new PortalInfo(new Vec3(0, 66, 0), Vec3.ZERO, entity.getYRot(), entity.getXRot());
+            return new PortalInfo(new Vec3(8, 66, 8), Vec3.ZERO, entity.getYRot(), entity.getXRot());
         } else {
             // Return to overworld spawn
             BlockPos spawnPos = destWorld.getSharedSpawnPos();
-            return new PortalInfo(new Vec3(spawnPos.getX(), spawnPos.getY(), spawnPos.getZ()),
+            return new PortalInfo(new Vec3(spawnPos.getX() + 0.5, spawnPos.getY(), spawnPos.getZ() + 0.5),
                     Vec3.ZERO, entity.getYRot(), entity.getXRot());
         }
     }

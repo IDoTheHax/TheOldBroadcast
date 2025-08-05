@@ -1,0 +1,10 @@
+{
+  "type": "theoldbroadcast:old_broadcast",
+  "generator": {
+    "type": "theoldbroadcast:old_broadcast",
+    "biome_source": {
+      "type": "theoldbroadcast:old_broadcast"
+    }
+  }
+}
+

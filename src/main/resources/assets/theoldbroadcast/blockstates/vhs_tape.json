@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "theoldbroadcast:block/vhs_tape"
+    },
+    "facing=south": {
+      "model": "theoldbroadcast:block/vhs_tape",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "theoldbroadcast:block/vhs_tape",
+      "y": 270
+    },
+    "facing=east": {
+      "model": "theoldbroadcast:block/vhs_tape",
+      "y": 90
+    }
+  }
+}
+
