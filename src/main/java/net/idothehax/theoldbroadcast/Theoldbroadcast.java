@@ -28,6 +28,8 @@ import net.minecraftforge.registries.RegistryObject;
 import net.idothehax.theoldbroadcast.block.VintageTelevisionBlock;
 import net.idothehax.theoldbroadcast.block.VHSTapeBlock;
 import net.idothehax.theoldbroadcast.world.structure.StudioStructures;
+import net.idothehax.theoldbroadcast.world.feature.StudioFeatures;
+import net.idothehax.theoldbroadcast.world.feature.StudioPlacementTypes;
 import org.slf4j.Logger;
 
 // The value here should match an entry in the META-INF/mods.toml file
@@ -82,6 +84,8 @@ public class Theoldbroadcast {
 
         // Register dimension components
         StudioStructures.register(modEventBus);
+        StudioFeatures.register(modEventBus);
+        StudioPlacementTypes.register(modEventBus);
 
         // Register ourselves for server and other game events we are interested in
         MinecraftForge.EVENT_BUS.register(this);

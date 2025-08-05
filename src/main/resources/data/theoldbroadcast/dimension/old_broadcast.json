@@ -1,10 +1,17 @@
 {
   "type": "theoldbroadcast:old_broadcast",
   "generator": {
-    "type": "theoldbroadcast:old_broadcast",
-    "biome_source": {
-      "type": "theoldbroadcast:old_broadcast"
+    "type": "minecraft:flat",
+    "settings": {
+      "layers": [
+        {
+          "block": "minecraft:gray_concrete",
+          "height": 64
+        }
+      ],
+      "biome": "minecraft:plains",
+      "structure_overrides": [],
+      "features": []
     }
   }
 }
-

@@ -1,5 +1,4 @@
 package net.idothehax.theoldbroadcast.block;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -45,3 +44,4 @@ public class VHSTapeBlock extends HorizontalDirectionalBlock {
         builder.add(FACING);
     }
 }
+
