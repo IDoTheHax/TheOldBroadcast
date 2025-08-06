@@ -197,6 +197,7 @@ public class StudioRoomFeature extends Feature<NoneFeatureConfiguration> {
             }
             case 2 -> {
                 // Children's show set
+                // Children's show set
                 Block[] colors = new Block[]{
                     Blocks.RED_WOOL, Blocks.BLUE_WOOL, Blocks.YELLOW_WOOL, Blocks.GREEN_WOOL
                 };

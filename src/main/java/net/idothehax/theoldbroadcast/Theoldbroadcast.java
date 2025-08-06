@@ -85,6 +85,7 @@ public class Theoldbroadcast {
         // Register dimension components
         StudioStructures.register(modEventBus);
         StudioFeatures.register(modEventBus);
+
         StudioPlacementTypes.register(modEventBus);
 
         // Register ourselves for server and other game events we are interested in

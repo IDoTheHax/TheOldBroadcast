@@ -121,10 +121,45 @@ public class StudioMazeFeature extends Feature<NoneFeatureConfiguration> {
                 }
             }
         }
-
+        // Add corridors between adjacent open cells
+        for (int mazeX = 0; mazeX < MAZE_CELLS; mazeX++) {
+            for (int mazeZ = 0; mazeZ < MAZE_CELLS; mazeZ++) {
+                if (!maze[mazeX][mazeZ]) {
+                    // Check east neighbor
+                    if (mazeX < MAZE_CELLS - 1 && !maze[mazeX + 1][mazeZ]) {
+                        carveCorridor(level, startPos.offset(mazeX * CELL_SIZE, 0, mazeZ * CELL_SIZE), startPos.offset((mazeX + 1) * CELL_SIZE, 0, mazeZ * CELL_SIZE));
+                    }
+                    // Check south neighbor
+                    if (mazeZ < MAZE_CELLS - 1 && !maze[mazeX][mazeZ + 1]) {
+                        carveCorridor(level, startPos.offset(mazeX * CELL_SIZE, 0, mazeZ * CELL_SIZE), startPos.offset(mazeX * CELL_SIZE, 0, (mazeZ + 1) * CELL_SIZE));
+                    }
+                }
+            }
+        }
         // Add mega rooms occasionally
         if (random.nextFloat() < 0.3f) {
             generateMegaRoom(level, startPos, maze, random);
+        }
+    }
+
+    // Carves a corridor between two cell centers
+    private void carveCorridor(WorldGenLevel level, BlockPos from, BlockPos to) {
+        int minX = Math.min(from.getX(), to.getX()) + CELL_SIZE / 2;
+        int minZ = Math.min(from.getZ(), to.getZ()) + CELL_SIZE / 2;
+        int maxX = Math.max(from.getX(), to.getX()) + CELL_SIZE / 2;
+        int maxZ = Math.max(from.getZ(), to.getZ()) + CELL_SIZE / 2;
+        // Carve straight corridor (either X or Z direction)
+        for (int x = minX; x <= maxX; x++) {
+            for (int z = minZ; z <= maxZ; z++) {
+                // Floor
+                level.setBlock(new BlockPos(x, 64, z), Blocks.GRAY_CONCRETE.defaultBlockState(), 3);
+                // Air space
+                for (int y = 65; y < 80; y++) {
+                    level.setBlock(new BlockPos(x, y, z), Blocks.AIR.defaultBlockState(), 3);
+                }
+                // Ceiling
+                level.setBlock(new BlockPos(x, 80, z), Blocks.GRAY_CONCRETE.defaultBlockState(), 3);
+            }
         }
     }
 

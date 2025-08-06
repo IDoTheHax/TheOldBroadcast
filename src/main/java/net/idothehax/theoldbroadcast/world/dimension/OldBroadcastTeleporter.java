@@ -11,7 +11,7 @@ import net.minecraftforge.common.util.ITeleporter;
 import java.util.function.Function;
 
 public class OldBroadcastTeleporter implements ITeleporter {
-
+    
     public static void teleportToOldBroadcast(ServerLevel level, ServerPlayer player) {
         ServerLevel targetLevel = level.getServer().getLevel(OldBroadcastDimensions.OLD_BROADCAST_LEVEL);
         if (targetLevel != null) {
@@ -32,7 +32,7 @@ public class OldBroadcastTeleporter implements ITeleporter {
         } else {
             // Return to overworld spawn
             BlockPos spawnPos = destWorld.getSharedSpawnPos();
-            return new PortalInfo(new Vec3(spawnPos.getX() + 0.5, spawnPos.getY(), spawnPos.getZ() + 0.5),
+            return new PortalInfo(new Vec3(spawnPos.getX() + 0.5, spawnPos.getY(), spawnPos.getZ() + 0.5), 
                     Vec3.ZERO, entity.getYRot(), entity.getXRot());
         }
     }
@@ -40,15 +40,15 @@ public class OldBroadcastTeleporter implements ITeleporter {
     @Override
     public Entity placeEntity(Entity entity, ServerLevel currentWorld, ServerLevel destWorld, float yaw, Function<Boolean, Entity> repositionEntity) {
         Entity repositionedEntity = repositionEntity.apply(false);
-
+        
         // Add entrance effects
         if (destWorld.dimension().equals(OldBroadcastDimensions.OLD_BROADCAST_LEVEL)) {
             // Player entered the Old Broadcast dimension
-            destWorld.playSound(null, repositionedEntity.blockPosition(),
-                    net.minecraft.sounds.SoundEvents.PORTAL_TRAVEL,
+            destWorld.playSound(null, repositionedEntity.blockPosition(), 
+                    net.minecraft.sounds.SoundEvents.PORTAL_TRAVEL, 
                     net.minecraft.sounds.SoundSource.AMBIENT, 1.0f, 0.5f);
         }
-
+        
         return repositionedEntity;
     }
 }

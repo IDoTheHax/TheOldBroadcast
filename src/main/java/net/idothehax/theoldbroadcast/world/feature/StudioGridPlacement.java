@@ -20,20 +20,20 @@ public class StudioGridPlacement extends PlacementModifier {
     @Override
     public Stream<BlockPos> getPositions(PlacementContext context, RandomSource random, BlockPos pos) {
         List<BlockPos> positions = new ArrayList<>();
-
+        
         // Generate studio rooms every 32 blocks
         int worldX = pos.getX();
         int worldZ = pos.getZ();
-
+        
         // Snap to 32-block grid
         int gridX = (worldX / 32) * 32;
         int gridZ = (worldZ / 32) * 32;
-
+        
         // Only place if we're at the grid position
         if (worldX == gridX && worldZ == gridZ) {
             positions.add(new BlockPos(gridX, 65, gridZ));
         }
-
+        
         return positions.stream();
     }
 
