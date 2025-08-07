@@ -93,12 +93,6 @@ public class ShadowGhostEntity extends Monster {
         this.setDeltaMovement(this.getDeltaMovement().x, 0, this.getDeltaMovement().z);
         super.aiStep();
     }
-
-    @Override
-    public void checkDespawn() {
-        super.checkDespawn();
-    }
-
     public static AttributeSupplier.Builder createAttributes() {
         return Monster.createMonsterAttributes()
                 .add(Attributes.MAX_HEALTH, 20.0D)

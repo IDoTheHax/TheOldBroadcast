@@ -57,15 +57,22 @@ public class SanityClientEvents {
         ShaderInstance shader = ModShaders.getStaticOverlayShader();
         if (shader == null) return;
 
+        // Calculate 4:3 area
+        int targetWidth = screenWidth;
+        int targetHeight = (int) (screenWidth * 3.0 / 4.0);
+        if (targetHeight > screenHeight) {
+            targetHeight = screenHeight;
+            targetWidth = (int) (screenHeight * 4.0 / 3.0);
+        }
+        int x = (screenWidth - targetWidth) / 2;
+        int y = (screenHeight - targetHeight) / 2;
+
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableDepthTest();
         RenderSystem.disableCull();
-
-        // Apply our custom shader
         RenderSystem.setShader(() -> shader);
 
-        // Set shader uniforms
         if (shader.getUniform("Time") != null) {
             shader.getUniform("Time").set((float) gameTick / 20.0f);
         }
@@ -73,15 +80,12 @@ public class SanityClientEvents {
             shader.getUniform("Opacity").set(opacity);
         }
         if (shader.getUniform("ScreenSize") != null) {
-            shader.getUniform("ScreenSize").set((float) screenWidth, (float) screenHeight);
+            shader.getUniform("ScreenSize").set((float) targetWidth, (float) targetHeight);
         }
 
-        // Setup matrices
         Matrix4f modelView = new Matrix4f();
         Matrix4f projection = new Matrix4f().ortho(0.0F, screenWidth, screenHeight, 0.0F, 1000.0F, 3000.0F);
-
         RenderSystem.setProjectionMatrix(projection, VertexSorting.ORTHOGRAPHIC_Z);
-
         if (shader.getUniform("ModelViewMat") != null) {
             shader.getUniform("ModelViewMat").set(modelView);
         }
@@ -89,20 +93,49 @@ public class SanityClientEvents {
             shader.getUniform("ProjMat").set(projection);
         }
 
-        // Render fullscreen quad
+        // Draw black bars (letterbox/pillarbox)
+        if (x > 0) {
+            fillRect(0, 0, x, screenHeight, 0xFF000000);
+            fillRect(screenWidth - x, 0, x, screenHeight, 0xFF000000);
+        }
+        if (y > 0) {
+            fillRect(0, 0, screenWidth, y, 0xFF000000);
+            fillRect(0, screenHeight - y, screenWidth, y, 0xFF000000);
+        }
+
+        // Render 4:3 overlay
         BufferBuilder bufferBuilder = Tesselator.getInstance().getBuilder();
         bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-
-        bufferBuilder.vertex(0, screenHeight, 0).uv(0.0F, 1.0F).endVertex();
-        bufferBuilder.vertex(screenWidth, screenHeight, 0).uv(1.0F, 1.0F).endVertex();
-        bufferBuilder.vertex(screenWidth, 0, 0).uv(1.0F, 0.0F).endVertex();
-        bufferBuilder.vertex(0, 0, 0).uv(0.0F, 0.0F).endVertex();
-
+        // Pass 4:3 UVs to shader (0,0)-(1,1) always covers the 4:3 area, regardless of screen size)
+        bufferBuilder.vertex(x, y + targetHeight, 0).uv(0.0F, 1.0F).endVertex();
+        bufferBuilder.vertex(x + targetWidth, y + targetHeight, 0).uv(1.0F, 1.0F).endVertex();
+        bufferBuilder.vertex(x + targetWidth, y, 0).uv(1.0F, 0.0F).endVertex();
+        bufferBuilder.vertex(x, y, 0).uv(0.0F, 0.0F).endVertex();
         BufferUploader.drawWithShader(bufferBuilder.end());
 
-        // Cleanup
+        // Restore projection matrix after custom overlay
+        RenderSystem.setProjectionMatrix(new Matrix4f().ortho(0.0F, screenWidth, screenHeight, 0.0F, 1000.0F, 3000.0F), VertexSorting.ORTHOGRAPHIC_Z);
+
         RenderSystem.enableDepthTest();
         RenderSystem.enableCull();
+        RenderSystem.disableBlend();
+    }
+
+    // Helper to draw a solid color rectangle (ARGB)
+    private static void fillRect(int x, int y, int w, int h, int color) {
+        BufferBuilder buffer = Tesselator.getInstance().getBuilder();
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        float a = ((color >> 24) & 0xFF) / 255.0F;
+        float r = ((color >> 16) & 0xFF) / 255.0F;
+        float g = ((color >> 8) & 0xFF) / 255.0F;
+        float b = (color & 0xFF) / 255.0F;
+        buffer.vertex(x, y + h, 0).color(r, g, b, a).endVertex();
+        buffer.vertex(x + w, y + h, 0).color(r, g, b, a).endVertex();
+        buffer.vertex(x + w, y, 0).color(r, g, b, a).endVertex();
+        buffer.vertex(x, y, 0).color(r, g, b, a).endVertex();
+        BufferUploader.drawWithShader(buffer.end());
         RenderSystem.disableBlend();
     }
 }
