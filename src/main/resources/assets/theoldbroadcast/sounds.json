@@ -1,0 +1,31 @@
+{
+  "block.vhs.place": {
+    "category": "block",
+    "subtitle": "VHS tape placed",
+    "sounds": [
+      { "name": "theoldbroadcast:block/vhs_place", "stream": false }
+    ]
+  },
+  "block.vhs.step": {
+    "category": "block",
+    "subtitle": "VHS tape stepped on",
+    "sounds": [
+      { "name": "theoldbroadcast:block/vhs_step", "stream": false }
+    ]
+  },
+  "block.vhs.passive": {
+    "category": "block",
+    "subtitle": "VHS tape static",
+    "sounds": [
+      { "name": "theoldbroadcast:block/vhs_passive", "stream": true }
+    ]
+  },
+  "entity.shadow_ghost.appear": {
+    "category": "entity",
+    "subtitle": "Shadow ghost appears",
+    "sounds": [
+      { "name": "theoldbroadcast:entity/shadow_ghost_appear", "stream": true }
+    ]
+  }
+}
+

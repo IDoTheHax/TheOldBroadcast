@@ -3,8 +3,8 @@
   "generator": {
     "type": "theoldbroadcast:old_broadcast",
     "biome_source": {
-      "type": "theoldbroadcast:old_broadcast"
+      "type": "theoldbroadcast:old_broadcast",
+      "biome": "theoldbroadcast:studio_biome"
     }
   }
 }
-

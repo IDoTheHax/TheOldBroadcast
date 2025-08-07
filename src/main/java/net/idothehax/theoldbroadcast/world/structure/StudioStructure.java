@@ -112,16 +112,23 @@ public class StudioStructure extends Structure {
                     placeBlock(level, Blocks.BLACK_WOOL.defaultBlockState(), x, 65, z, box);
                 }
             }
-
             // Generate screen at front
             for (int x = box.minX() + 5; x < box.maxX() - 5; x++) {
                 for (int y = 66; y < 75; y++) {
                     placeBlock(level, Blocks.WHITE_WOOL.defaultBlockState(), x, y, box.maxZ() - 3, box);
                 }
             }
-
             // Add projector
             placeBlock(level, Blocks.OBSERVER.defaultBlockState(), box.minX() + 15, 70, box.minZ() + 5, box);
+            // Add flickering light (simulate with redstone lamp and random lever)
+            placeBlock(level, Blocks.REDSTONE_LAMP.defaultBlockState(), box.minX() + 10, 72, box.maxZ() - 6, box);
+            if (random.nextBoolean()) {
+                placeBlock(level, Blocks.LEVER.defaultBlockState(), box.minX() + 10, 73, box.maxZ() - 6, box);
+            }
+            // Place a VHS tape as a clue
+            if (random.nextInt(3) == 0) {
+                placeBlock(level, net.idothehax.theoldbroadcast.Theoldbroadcast.VHS_TAPE_BLOCK.get().defaultBlockState(), box.minX() + 8, 65, box.maxZ() - 8, box);
+            }
         }
 
         private void generateBroadcastRoom(WorldGenLevel level, RandomSource random, BoundingBox box) {
@@ -132,11 +139,19 @@ public class StudioStructure extends Structure {
                     placeBlock(level, Blocks.OBSERVER.defaultBlockState(), x, 66, z, box);
                 }
             }
-
             // TV screens on walls
             for (int i = 0; i < 5; i++) {
                 int x = box.minX() + 2 + i * 5;
                 placeBlock(level, Blocks.BLACK_STAINED_GLASS.defaultBlockState(), x, 68, box.minZ() + 1, box);
+            }
+            // Add static overlay prop (simulate with glass panes)
+            for (int i = 0; i < 3; i++) {
+                int x = box.minX() + 6 + i * 7;
+                placeBlock(level, Blocks.WHITE_STAINED_GLASS_PANE.defaultBlockState(), x, 69, box.minZ() + 2, box);
+            }
+            // Place a VHS tape as a clue
+            if (random.nextInt(4) == 0) {
+                placeBlock(level, net.idothehax.theoldbroadcast.Theoldbroadcast.VHS_TAPE_BLOCK.get().defaultBlockState(), box.maxX() - 6, 65, box.minZ() + 4, box);
             }
         }
 
@@ -147,18 +162,20 @@ public class StudioStructure extends Structure {
                     // Desk
                     placeBlock(level, Blocks.SPRUCE_PLANKS.defaultBlockState(), x, 65, z, box);
                     placeBlock(level, Blocks.SPRUCE_PLANKS.defaultBlockState(), x + 1, 65, z, box);
-
                     // Equipment
                     placeBlock(level, Blocks.DISPENSER.defaultBlockState(), x, 66, z, box);
                     placeBlock(level, Blocks.REPEATER.defaultBlockState(), x + 1, 66, z, box);
                 }
             }
-
             // Film reels scattered around (using barrels as placeholders)
             for (int i = 0; i < 8; i++) {
                 int x = box.minX() + 2 + random.nextInt(box.getXSpan() - 4);
                 int z = box.minZ() + 2 + random.nextInt(box.getZSpan() - 4);
                 placeBlock(level, Blocks.BARREL.defaultBlockState(), x, 66, z, box);
+            }
+            // Place a VHS tape as a clue
+            if (random.nextInt(5) == 0) {
+                placeBlock(level, net.idothehax.theoldbroadcast.Theoldbroadcast.VHS_TAPE_BLOCK.get().defaultBlockState(), box.maxX() - 7, 65, box.maxZ() - 7, box);
             }
         }
 
@@ -170,6 +187,10 @@ public class StudioStructure extends Structure {
                 case 0 -> generateHauntedHouseSet(level, random, box);
                 case 1 -> generateSciFiSet(level, random, box);
                 case 2 -> generateChildrenShowSet(level, random, box);
+            }
+            // Place a VHS tape as a clue
+            if (random.nextInt(6) == 0) {
+                placeBlock(level, net.idothehax.theoldbroadcast.Theoldbroadcast.VHS_TAPE_BLOCK.get().defaultBlockState(), box.minX() + 6, 65, box.minZ() + 6, box);
             }
         }
 
@@ -225,7 +246,6 @@ public class StudioStructure extends Structure {
                     placeBlock(level, Blocks.BOOKSHELF.defaultBlockState(), x, y, box.maxZ() - 3, box);
                 }
             }
-
             // Props scattered around (using blocks since armor stands are entities)
             for (int i = 0; i < 15; i++) {
                 int x = box.minX() + 2 + random.nextInt(box.getXSpan() - 4);
@@ -234,6 +254,10 @@ public class StudioStructure extends Structure {
                     Blocks.SKELETON_SKULL.defaultBlockState() :
                     Blocks.CHEST.defaultBlockState();
                 placeBlock(level, prop, x, 66, z, box);
+            }
+            // Place a VHS tape as a clue
+            if (random.nextInt(4) == 0) {
+                placeBlock(level, net.idothehax.theoldbroadcast.Theoldbroadcast.VHS_TAPE_BLOCK.get().defaultBlockState(), box.maxX() - 5, 65, box.minZ() + 5, box);
             }
         }
 
@@ -260,6 +284,10 @@ public class StudioStructure extends Structure {
                 int x = box.minX() + 2 + random.nextInt(box.getXSpan() - 4);
                 int z = box.minZ() + 2 + random.nextInt(box.getZSpan() - 4);
                 placeBlock(level, Blocks.TRIPWIRE.defaultBlockState(), x, 65, z, box);
+            }
+            // Place a VHS tape as a clue
+            if (random.nextInt(8) == 0) {
+                placeBlock(level, net.idothehax.theoldbroadcast.Theoldbroadcast.VHS_TAPE_BLOCK.get().defaultBlockState(), box.minX() + 3, 65, box.maxZ() - 3, box);
             }
         }
     }

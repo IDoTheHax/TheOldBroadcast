@@ -1,6 +1,12 @@
 package net.idothehax.theoldbroadcast;
 
 import com.mojang.logging.LogUtils;
+import com.mojang.serialization.Codec;
+import net.idothehax.theoldbroadcast.block.BroadcastPortalBlock;
+import net.idothehax.theoldbroadcast.sound.ModSounds;
+import net.idothehax.theoldbroadcast.world.biome.OldBroadcastBiomes;
+import net.idothehax.theoldbroadcast.world.dimension.OldBroadcastBiomeSource;
+import net.idothehax.theoldbroadcast.world.dimension.OldBroadcastChunkGenerator;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -8,8 +14,10 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
@@ -27,6 +35,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import net.idothehax.theoldbroadcast.block.VintageTelevisionBlock;
 import net.idothehax.theoldbroadcast.block.VHSTapeBlock;
+import net.idothehax.theoldbroadcast.entity.ModEntities;
 import net.idothehax.theoldbroadcast.world.structure.StudioStructures;
 import org.slf4j.Logger;
 
@@ -44,10 +53,15 @@ public class Theoldbroadcast {
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, MODID);
     // Create a Deferred Register to hold CreativeModeTabs which will all be registered under the "theoldbroadcast" namespace
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
-
-    // Remove the old codec registrations and replace with proper registry objects
-    // public static final RegistryObject<ChunkGenerator> OLD_BROADCAST_CHUNK_GENERATOR = CHUNK_GENERATORS.register("old_broadcast", () -> OldBroadcastChunkGenerator.CODEC);
-    // public static final RegistryObject<BiomeSource> OLD_BROADCAST_BIOME_SOURCE = BIOME_SOURCES.register("old_broadcast", () -> OldBroadcastBiomeSource.CODEC);
+    // Register custom chunk generator and biome source codecs for the dimension
+    public static final DeferredRegister<Codec<? extends ChunkGenerator>> CHUNK_GENERATORS =
+        DeferredRegister.create(Registries.CHUNK_GENERATOR, MODID);
+    public static final DeferredRegister<Codec<? extends BiomeSource>> BIOME_SOURCES =
+        DeferredRegister.create(Registries.BIOME_SOURCE, MODID);
+    public static final RegistryObject<Codec<OldBroadcastChunkGenerator>> OLD_BROADCAST_CHUNK_GENERATOR =
+        CHUNK_GENERATORS.register("old_broadcast", () -> OldBroadcastChunkGenerator.CODEC);
+    public static final RegistryObject<Codec<OldBroadcastBiomeSource>> OLD_BROADCAST_BIOME_SOURCE =
+        BIOME_SOURCES.register("old_broadcast", () -> OldBroadcastBiomeSource.CODEC);
 
     // Create vintage television block
     public static final RegistryObject<Block> VINTAGE_TELEVISION = BLOCKS.register("vintage_television", VintageTelevisionBlock::new);
@@ -57,6 +71,10 @@ public class Theoldbroadcast {
     public static final RegistryObject<Block> VHS_TAPE_BLOCK = BLOCKS.register("vhs_tape", VHSTapeBlock::new);
     public static final RegistryObject<Item> VHS_TAPE = ITEMS.register("vhs_tape", () -> new BlockItem(VHS_TAPE_BLOCK.get(), new Item.Properties()));
 
+    // Create broadcast portal block and item
+    public static final RegistryObject<Block> BROADCAST_PORTAL_BLOCK = BLOCKS.register("broadcast_portal", BroadcastPortalBlock::new);
+    public static final RegistryObject<Item> BROADCAST_PORTAL_ITEM = ITEMS.register("broadcast_portal", () -> new BlockItem(BROADCAST_PORTAL_BLOCK.get(), new Item.Properties()));
+
     // Creates a creative tab for Old Broadcast items
     public static final RegistryObject<CreativeModeTab> OLD_BROADCAST_TAB = CREATIVE_MODE_TABS.register("old_broadcast_tab", () -> CreativeModeTab.builder()
         .title(Component.translatable("itemGroup.theoldbroadcast.old_broadcast_tab"))
@@ -65,44 +83,34 @@ public class Theoldbroadcast {
         .displayItems((parameters, output) -> {
             output.accept(VINTAGE_TELEVISION_ITEM.get());
             output.accept(VHS_TAPE.get());
+            output.accept(BROADCAST_PORTAL_ITEM.get());
         }).build());
 
     public Theoldbroadcast() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
-
-        // Register the commonSetup method for modloading
-        modEventBus.addListener(this::commonSetup);
-
-        // Register the Deferred Register to the mod event bus so blocks get registered
         BLOCKS.register(modEventBus);
-        // Register the Deferred Register to the mod event bus so items get registered
         ITEMS.register(modEventBus);
-        // Register the Deferred Register to the mod event bus so tabs get registered
         CREATIVE_MODE_TABS.register(modEventBus);
-
-        // Register dimension components
         StudioStructures.register(modEventBus);
-
-        // Register ourselves for server and other game events we are interested in
+        ModEntities.register(modEventBus);
+        CHUNK_GENERATORS.register(modEventBus);
+        BIOME_SOURCES.register(modEventBus);
+        // Register custom sounds
+        ModSounds.register(modEventBus);
+        modEventBus.addListener(this::commonSetup);
         MinecraftForge.EVENT_BUS.register(this);
-
-        // Register the item to a creative tab
-        modEventBus.addListener(this::addCreative);
-
-        // Register our mod's ForgeConfigSpec so that Forge can create and load the config file for us
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC);
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
-        // Some common setup code
-        LOGGER.info("HELLO FROM COMMON SETUP");
+        // Register dimension, chunk generator, and any additional setup
+        // (e.g., OldBroadcastDimensions, OldBroadcastChunkGenerator, etc.)
+        LOGGER.info("HELLO FROM THE STUDIO!");
 
         if (Config.logDirtBlock)
             LOGGER.info("DIRT BLOCK >> {}", ForgeRegistries.BLOCKS.getKey(Blocks.DIRT));
 
         LOGGER.info(Config.magicNumberIntroduction + Config.magicNumber);
 
-        Config.items.forEach((item) -> LOGGER.info("ITEM >> {}", item.toString()));
     }
 
     // Add items to existing creative tabs
@@ -119,7 +127,7 @@ public class Theoldbroadcast {
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
         // Do something when the server starts
-        LOGGER.info("HELLO from server starting");
+        LOGGER.info("Welcome to the Evening News!");
     }
 
     // You can use EventBusSubscriber to automatically register all static methods in the class annotated with @SubscribeEvent
@@ -128,9 +136,7 @@ public class Theoldbroadcast {
 
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
-            // Some client setup code
-            LOGGER.info("HELLO FROM CLIENT SETUP");
-            LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
+            LOGGER.info("WE ARE ON AIR WITH REPORTER >> {}", Minecraft.getInstance().getUser().getName());
         }
     }
 }
