@@ -3,6 +3,7 @@ package net.idothehax.theoldbroadcast;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import net.idothehax.theoldbroadcast.block.BroadcastPortalBlock;
+import net.idothehax.theoldbroadcast.client.StaticOverlayFramebuffer;
 import net.idothehax.theoldbroadcast.sound.ModSounds;
 import net.idothehax.theoldbroadcast.world.biome.OldBroadcastBiomes;
 import net.idothehax.theoldbroadcast.world.dimension.OldBroadcastBiomeSource;
@@ -22,6 +23,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
+import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModLoadingContext;
@@ -36,6 +38,7 @@ import net.minecraftforge.registries.RegistryObject;
 import net.idothehax.theoldbroadcast.block.VintageTelevisionBlock;
 import net.idothehax.theoldbroadcast.block.VHSTapeBlock;
 import net.idothehax.theoldbroadcast.entity.ModEntities;
+import net.idothehax.theoldbroadcast.network.ModNetwork;
 import net.idothehax.theoldbroadcast.world.structure.StudioStructures;
 import org.slf4j.Logger;
 
@@ -88,6 +91,10 @@ public class Theoldbroadcast {
 
     public Theoldbroadcast() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
+
+        // Register mod config
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+
         BLOCKS.register(modEventBus);
         ITEMS.register(modEventBus);
         CREATIVE_MODE_TABS.register(modEventBus);
@@ -98,6 +105,8 @@ public class Theoldbroadcast {
         // Register custom sounds
         ModSounds.register(modEventBus);
         modEventBus.addListener(this::commonSetup);
+        modEventBus.addListener(this::addCreative);
+        ModNetwork.registerPackets();
         MinecraftForge.EVENT_BUS.register(this);
     }
 

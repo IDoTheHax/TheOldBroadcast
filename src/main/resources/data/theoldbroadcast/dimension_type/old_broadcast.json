@@ -4,7 +4,7 @@
   "coordinate_scale": 1.0,
   "has_skylight": false,
   "has_ceiling": true,
-  "ambient_light": 0.1,
+  "ambient_light": 0.05,
   "fixed_time": 18000,
   "monster_spawn_light_level": {
     "type": "minecraft:uniform",
@@ -21,7 +21,20 @@
   "height": 256,
   "logical_height": 256,
   "bed_works": false,
-  "effects": "minecraft:the_nether",
-  "piglin_safe": false
+  "piglin_safe": false,
+  "sky_type": "none",
+  "has_ground_fog": false,
+  "cloud_height": -1,
+  "water_color": 4159204,
+  "water_fog_color": 329011,
+  "fog_color": 1315860,
+  "sky_color": 0,
+  "foliage_color": 6316128,
+  "grass_color": 4764952,
+  "mood_sound": {
+    "sound": "minecraft:ambient.cave",
+    "tick_delay": 6000,
+    "offset": 2.0,
+    "block_search_extent": 8
+  }
 }
-

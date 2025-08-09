@@ -1,20 +1,19 @@
 package net.idothehax.theoldbroadcast;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
 import net.idothehax.theoldbroadcast.client.ModShaders;
+import net.idothehax.theoldbroadcast.client.StaticOverlayFramebuffer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RenderGuiOverlayEvent;
-import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
+import net.minecraftforge.client.event.RenderGuiEvent;
+import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.event.TickEvent.ClientTickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import org.joml.Matrix4f;
+import com.mojang.blaze3d.systems.RenderSystem;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Client-side events for sanity visuals and audio using custom shaders.
@@ -22,120 +21,99 @@ import org.joml.Matrix4f;
 @Mod.EventBusSubscriber(modid = Theoldbroadcast.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public class SanityClientEvents {
     private static int gameTick = 0;
+    private static final StaticOverlayFramebuffer framebuffer = new StaticOverlayFramebuffer();
+    private static boolean shouldApplyEffect = false;
+    private static float currentOpacity = 0.0f;
+    private static boolean screenCaptured = false;
+    private static int clientSanity = 100;
+    private static final Logger LOGGER = LogManager.getLogger();
+
+    public static void setClientSanity(int sanity) {
+        clientSanity = sanity;
+        LOGGER.info("[SanityClientEvents] setClientSanity called: {}", sanity);
+    }
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent event) {
         if (event.phase == ClientTickEvent.Phase.END) {
             gameTick++;
+
+            Minecraft mc = Minecraft.getInstance();
+            Player player = mc.player;
+
+            // Check if we should apply effects
+            boolean prevShouldApply = shouldApplyEffect;
+            shouldApplyEffect = false;
+            currentOpacity = 0.0f;
+
+            if (player != null && mc.level != null && mc.screen == null) {
+                ResourceLocation dim = mc.level.dimension().location();
+                if (dim.equals(ResourceLocation.fromNamespaceAndPath(Theoldbroadcast.MODID, "old_broadcast"))) {
+                    int sanity = clientSanity;
+                    if (sanity < 100) {
+                        shouldApplyEffect = true;
+                        // More dramatic opacity curve for better visual effect
+                        float sanityRatio = sanity / 100.0f;
+                        currentOpacity = (1.0f - sanityRatio) * (1.0f - sanityRatio); // Quadratic curve
+                        currentOpacity = Math.min(currentOpacity, 0.8f); // Cap at 80% opacity
+                    }
+                }
+            }
+
+            // If effect just started or stopped, resize framebuffer and reset screenCaptured
+            if (shouldApplyEffect != prevShouldApply && mc.getWindow() != null) {
+                framebuffer.resize(mc.getWindow().getWidth(), mc.getWindow().getHeight());
+                screenCaptured = false;
+            }
+            // If effect is toggled off, also reset screenCaptured
+            if (!shouldApplyEffect) {
+                screenCaptured = false;
+            }
         }
     }
 
     @SubscribeEvent
-    public static void onRenderOverlay(RenderGuiOverlayEvent.Post event) {
-        // Only render on specific overlays, not over menus/GUIs
-        if (event.getOverlay() != VanillaGuiOverlay.CROSSHAIR.type()) {
-            return;
+    public static void onRenderLevelStage(RenderLevelStageEvent event) {
+        // Capture screen after world rendering but before translucent objects
+        if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_SOLID_BLOCKS && shouldApplyEffect && !screenCaptured) {
+            // Capture the current frame
+            framebuffer.captureScreen();
+            screenCaptured = true;
         }
-
-        Minecraft mc = Minecraft.getInstance();
-        Player player = mc.player;
-
-        // Don't render if in menu/GUI or not in our dimension
-        if (player == null || mc.screen != null ||
-            !mc.level.dimension().location().equals(ResourceLocation.fromNamespaceAndPath(Theoldbroadcast.MODID, "old_broadcast"))) {
-            return;
-        }
-
-        int sanity = player.getPersistentData().getInt(SanityHandler.SANITY_TAG);
-        if (sanity >= SanityHandler.MAX_SANITY) return;
-
-        float opacity = 1.0F - (sanity / (float)SanityHandler.MAX_SANITY);
-        renderStaticOverlay(opacity, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
     }
 
-    private static void renderStaticOverlay(float opacity, int screenWidth, int screenHeight) {
-        ShaderInstance shader = ModShaders.getStaticOverlayShader();
-        if (shader == null) return;
+    @SubscribeEvent
+    public static void onRenderGuiOverlay(RenderGuiEvent.Post event) {
+        // Apply distortion effect as a full-screen overlay after all GUI elements
+        if (shouldApplyEffect && screenCaptured && ModShaders.getStaticOverlayShader() != null) {
+            // Set up render state for overlay
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+            RenderSystem.disableDepthTest();
 
-        // Calculate 4:3 area
-        int targetWidth = screenWidth;
-        int targetHeight = (int) (screenWidth * 3.0 / 4.0);
-        if (targetHeight > screenHeight) {
-            targetHeight = screenHeight;
-            targetWidth = (int) (screenHeight * 4.0 / 3.0);
-        }
-        int x = (screenWidth - targetWidth) / 2;
-        int y = (screenHeight - targetHeight) / 2;
+            // Apply the lens distortion and static overlay effect
+            framebuffer.renderDistortedScreen(
+                ModShaders.getStaticOverlayShader(),
+                currentOpacity,
+                gameTick
+            );
 
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.disableDepthTest();
-        RenderSystem.disableCull();
-        RenderSystem.setShader(() -> shader);
-
-        if (shader.getUniform("Time") != null) {
-            shader.getUniform("Time").set((float) gameTick / 20.0f);
+            // Restore previous state
+            RenderSystem.enableDepthTest();
+            RenderSystem.disableBlend();
         }
-        if (shader.getUniform("Opacity") != null) {
-            shader.getUniform("Opacity").set(opacity);
+        // Only log when shader is null and we expect it to work (reduce spam)
+        else if (shouldApplyEffect && screenCaptured && ModShaders.getStaticOverlayShader() == null) {
+            if (gameTick % 60 == 0) { // Log once per second instead of every frame
+                LOGGER.warn("[SanityClientEvents] Shader instance is null - static overlay effect disabled");
+            }
         }
-        if (shader.getUniform("ScreenSize") != null) {
-            shader.getUniform("ScreenSize").set((float) targetWidth, (float) targetHeight);
-        }
-
-        Matrix4f modelView = new Matrix4f();
-        Matrix4f projection = new Matrix4f().ortho(0.0F, screenWidth, screenHeight, 0.0F, 1000.0F, 3000.0F);
-        RenderSystem.setProjectionMatrix(projection, VertexSorting.ORTHOGRAPHIC_Z);
-        if (shader.getUniform("ModelViewMat") != null) {
-            shader.getUniform("ModelViewMat").set(modelView);
-        }
-        if (shader.getUniform("ProjMat") != null) {
-            shader.getUniform("ProjMat").set(projection);
-        }
-
-        // Draw black bars (letterbox/pillarbox)
-        if (x > 0) {
-            fillRect(0, 0, x, screenHeight, 0xFF000000);
-            fillRect(screenWidth - x, 0, x, screenHeight, 0xFF000000);
-        }
-        if (y > 0) {
-            fillRect(0, 0, screenWidth, y, 0xFF000000);
-            fillRect(0, screenHeight - y, screenWidth, y, 0xFF000000);
-        }
-
-        // Render 4:3 overlay
-        BufferBuilder bufferBuilder = Tesselator.getInstance().getBuilder();
-        bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-        // Pass 4:3 UVs to shader (0,0)-(1,1) always covers the 4:3 area, regardless of screen size)
-        bufferBuilder.vertex(x, y + targetHeight, 0).uv(0.0F, 1.0F).endVertex();
-        bufferBuilder.vertex(x + targetWidth, y + targetHeight, 0).uv(1.0F, 1.0F).endVertex();
-        bufferBuilder.vertex(x + targetWidth, y, 0).uv(1.0F, 0.0F).endVertex();
-        bufferBuilder.vertex(x, y, 0).uv(0.0F, 0.0F).endVertex();
-        BufferUploader.drawWithShader(bufferBuilder.end());
-
-        // Restore projection matrix after custom overlay
-        RenderSystem.setProjectionMatrix(new Matrix4f().ortho(0.0F, screenWidth, screenHeight, 0.0F, 1000.0F, 3000.0F), VertexSorting.ORTHOGRAPHIC_Z);
-
-        RenderSystem.enableDepthTest();
-        RenderSystem.enableCull();
-        RenderSystem.disableBlend();
     }
 
-    // Helper to draw a solid color rectangle (ARGB)
-    private static void fillRect(int x, int y, int w, int h, int color) {
-        BufferBuilder buffer = Tesselator.getInstance().getBuilder();
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-        float a = ((color >> 24) & 0xFF) / 255.0F;
-        float r = ((color >> 16) & 0xFF) / 255.0F;
-        float g = ((color >> 8) & 0xFF) / 255.0F;
-        float b = (color & 0xFF) / 255.0F;
-        buffer.vertex(x, y + h, 0).color(r, g, b, a).endVertex();
-        buffer.vertex(x + w, y + h, 0).color(r, g, b, a).endVertex();
-        buffer.vertex(x + w, y, 0).color(r, g, b, a).endVertex();
-        buffer.vertex(x, y, 0).color(r, g, b, a).endVertex();
-        BufferUploader.drawWithShader(buffer.end());
-        RenderSystem.disableBlend();
+    /**
+     * Cleanup method called when the mod is shutting down
+     */
+    public static void cleanup() {
+        framebuffer.cleanup();
     }
 }
